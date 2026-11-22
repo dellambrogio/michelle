@@ -19,6 +19,10 @@ adb shell am start -n dev.michelle/.MainActivity
 
 Never uninstall it or clear its data on a phone you use: that deletes your meals and photos.
 
+Or with [just](https://github.com/casey/just): `just test`, `just install` (backs up the phone's data
+into `.backup/` first, then `adb install -r`), `just run`, `just log`, `just key`, `just backup`,
+`just restore .backup/michelle-….tar` (asks first), `just analyze food.jpg`; `just` lists them.
+
 ## The API key
 
 Michelle needs an Anthropic API key (console.anthropic.com → API Keys). Put it in
@@ -99,3 +103,8 @@ app/src/main/java/dev/michelle/
   health/HealthWriter.kt    Health Connect: a meal = one NutritionRecord ("meal-<id>")
   ui/                       Compose screens, charts (Canvas), goal settings, theme (greens), photos
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE). The camera, chart, cloud-off and edit icons are
+[Material icons](https://fonts.google.com/icons) by Google (Apache 2.0); the whale is Michelle's own.
