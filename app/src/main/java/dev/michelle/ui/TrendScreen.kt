@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +32,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -42,85 +44,87 @@ import java.time.temporal.ChronoUnit
 /** Weight against the plan, calories against the target (R29–R31). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrendScreen(onBack: () -> Unit, onSettings: () -> Unit) {
+fun TrendScreen(onBack: () -> Unit) {
     val app = LocalContext.current.applicationContext as App
     var progress by remember { mutableStateOf<Progress?>(null) }
     var loads by remember { mutableIntStateOf(0) }
     var plan by remember { mutableStateOf(true) }
+    var editGoal by remember { mutableStateOf(false) }
     LaunchedEffect(loads) { progress = Progress.load(app) }
     val ask = rememberLauncherForActivityResult(app.health.permissionContract) { loads++ }
 
     Scaffold(topBar = {
-        TopAppBar(title = { Text("Trend") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } })
+        TopAppBar(
+            title = { Text("Plan") },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+            // the goal editor opens in place of the graphs (R22); without a goal it's open already
+            actions = {
+                val g = progress?.goal
+                if (g != null) TextButton(onClick = { editGoal = !editGoal }) { Text(if (editGoal) "Close" else "Change") }
+            },
+        )
     }) { pad ->
         val p = progress
         Column(
-            Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxSize().padding(pad)
+                .then(if (editGoal || progress?.goal == null) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (p == null) { CircularProgressIndicator(); return@Column }
             val g = p.goal
-            if (g == null) {
-                Text("Set a goal (target weight and date) and your profile to see the plan and the calories.")
-                Button(onClick = onSettings) { Text("Set a goal") }
+            if (!p.canReadWeight && app.health.available) Row(verticalAlignment = Alignment.CenterVertically) {
+                Caption("Can't read your weight yet.", Modifier.weight(1f))
+                TextButton(onClick = { ask.launch(BodyReader.PERMISSIONS) }) { Text("Allow") }
             }
-            if (!p.canReadWeight && app.health.available) {
-                Text("Michelle can't read your weight from Health Connect yet.")
-                Button(onClick = { ask.launch(BodyReader.PERMISSIONS) }) { Text("Allow") }
+            if (g != null && !editGoal) {  // range and numbers
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    SegmentedButton(plan, { plan = true }, SegmentedButtonDefaults.itemShape(0, 2)) { Text("Whole plan") }
+                    SegmentedButton(!plan, { plan = false }, SegmentedButtonDefaults.itemShape(1, 2)) { Text("30 days") }
+                }
+                Numbers(p)
             }
-            if (g != null) SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                SegmentedButton(plan, { plan = true }, SegmentedButtonDefaults.itemShape(0, 2)) { Text("Plan") }
-                SegmentedButton(!plan, { plan = false }, SegmentedButtonDefaults.itemShape(1, 2)) { Text("30 days") }
+            val editing = editGoal || g == null
+            if (!editing) {
+                val (from, to) = if (g != null && plan) g.startDate to g.targetDate else p.today.minusDays(29) to p.today
+                Caption("Weight, kg")
+                if (p.weights.isEmpty()) Caption("No weights yet.")
+                else WeightChart(from, to, p.today, p.weights, p.trend, g, Modifier.fillMaxWidth().weight(1f))
+                Caption("Calories a day" + (p.kcalTarget?.let { ", target $it" } ?: ""))
+                KcalChart(from, if (to.isAfter(p.today) && !plan) p.today else to, p.today, p.kcal, p.kcalTarget, Modifier.fillMaxWidth().weight(1f))
             }
-            val (from, to) = if (g != null && plan) g.startDate to g.targetDate else p.today.minusDays(29) to p.today
-
-            Summary(p)
-            Text("Weight (kg)", style = MaterialTheme.typography.titleMedium)
-            if (p.weights.isEmpty()) Text("No weights yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            else {
-                WeightChart(from, to, p.today, p.weights, p.trend, g)
-                Legend("● weighed   — trend" + if (g != null) "   - - plan   ○ target" else "")
+            if (editing) {
+                if (g == null) Caption("Set your goal to see the plan.")
+                GoalSection(onSaved = { editGoal = false; loads++ })
             }
-            Text("Calories eaten (kcal)", style = MaterialTheme.typography.titleMedium)
-            KcalChart(from, if (to.isAfter(p.today) && !plan) p.today else to, p.today, p.kcal, p.kcalTarget)
-            Legend("▮ a day of Michelle's meals" + (p.kcalTarget?.let { "   - - target $it today" } ?: ""))
         }
     }
 }
 
 @Composable
-private fun Legend(s: String) = Text(s, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun Caption(s: String, modifier: Modifier = Modifier) =
+    Text(s, modifier, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-/** The numbers in words (R31): the latest weighing against the plan on that day. */
+/** Latest weight, the plan for that day, the difference: one row (R31). */
 @Composable
-private fun Summary(p: Progress) {
-    val g = p.goal
-    val latest = p.latest
-    val week = (1..7L).map { p.today.minusDays(it) }.mapNotNull { p.kcal[it] }
-    val dim = MaterialTheme.colorScheme.onSurfaceVariant
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (latest != null) Row {
-                Text("Latest weight  ", color = dim)
-                Text("%.1f kg".format(latest.second) + if (latest.first == p.today) " today" else " on " + dm.format(latest.first))
-            }
-            if (g != null && latest != null) {
-                val plan = g.planKg(latest.first)
-                val diff = latest.second - plan
-                Row { Text("Plan for that day  ", color = dim); Text("%.1f kg".format(plan)) }
-                Row {
-                    Text("Difference  ", color = dim)
-                    Text("%+.1f kg %s".format(diff, if (diff > 0) "above plan" else "below plan"),
-                        color = if (diff > 0.05) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-                }
-                Row { Text("To go  ", color = dim); Text("%.1f kg in %d days".format(latest.second - g.targetKg, ChronoUnit.DAYS.between(p.today, g.targetDate).coerceAtLeast(0))) }
-            }
-            p.trendKg?.let { Row { Text("Trend (smoothed)  ", color = dim); Text("%.1f kg".format(it)) } }
-            if (week.isNotEmpty()) Row {
-                Text("Last 7 days  ", color = dim)
-                Text("${week.average().toInt()} kcal a day" + (p.kcalTarget?.let { " (target $it)" } ?: "") + if (week.size < 7) ", ${week.size} days logged" else "")
-            }
-        }
+private fun Numbers(p: Progress) {
+    val g = p.goal ?: return
+    val (day, w) = p.latest ?: return
+    val plan = g.planKg(day)
+    val diff = w - plan
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Stat(kg(w), if (day == p.today) "today" else dm.format(day))
+        Stat(kg(plan), "plan")
+        Stat((if (diff >= 0) "+" else "−") + kg(kotlin.math.abs(diff)), if (diff > 0) "above plan" else "below plan",
+            if (diff > 0.05) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+    }
+}
+
+@Composable
+private fun Stat(value: String, label: String, color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleLarge, color = color)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

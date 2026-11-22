@@ -59,13 +59,14 @@ private val dmy = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
  * calorie formula, and the daily target worked out from them (R22–R25).
  */
 @Composable
-fun GoalSection() {
+fun GoalSection(onSaved: () -> Unit = {}) {
     val app = LocalContext.current.applicationContext as App
     val scope = rememberCoroutineScope()
     var saved by remember { mutableStateOf(app.goals.goal) }
     var targetDate by remember { mutableStateOf(saved?.targetDate ?: LocalDate.now().plusDays(90)) }
-    var targetKg by remember { mutableStateOf(saved?.targetKg?.let(::plain) ?: "") }
-    var typedKg by remember { mutableStateOf("") }               // only when Health Connect has no weight
+    var targetKg by remember { mutableStateOf(saved?.targetKg?.let(::kg) ?: "") }
+    var startDate by remember { mutableStateOf(saved?.startDate ?: LocalDate.now()) }
+    var startKg by remember { mutableStateOf(saved?.startKg?.let(::kg) ?: "") }   // filled from Health Connect when empty
     val p0 = remember { app.profiles.profile }
     var sex by remember { mutableStateOf(p0?.sex) }
     var birth by remember { mutableStateOf(p0?.birthDate ?: LocalDate.now().minusYears(40)) }
@@ -76,39 +77,42 @@ fun GoalSection() {
     var message by remember { mutableStateOf("") }
     LaunchedEffect(loads) {
         progress = Progress.load(app)
+        if (startKg.isBlank()) progress?.latest?.let { startKg = kg(it.second) }
         if (height.isBlank()) app.body.heightCm()?.let { height = "%.0f".format(it) }
     }
-    val ask = rememberLauncherForActivityResult(app.health.permissionContract) { loads++ }
+    val ask = rememberLauncherForActivityResult(app.health.permissionContract) { loads++; onSaved() }
 
     val p = progress
     val latest = p?.latest
     val tKg = targetKg.num()
     val profile = sex?.let { s -> height.num()?.takeIf { it in 100.0..250.0 }?.let { Profile(s, birth, it, activity) } }
-    // the goal as it would be saved now: from the latest weight (or the typed one) to the target
-    val draft = tKg?.let { t ->
-        // the plan starts today, from the latest weight (or the typed one)
-        (latest?.second ?: typedKg.num())?.let { kg -> Goal(LocalDate.now(), kg, targetDate, t) }?.takeIf { targetDate.isAfter(it.startDate) }
-    }
+    // the goal as it would be saved now: from the start (default today, latest weight) to the target
+    val draft = tKg?.let { t -> startKg.num()?.let { s -> Goal(startDate, s, targetDate, t) } }?.takeIf { targetDate.isAfter(it.startDate) }
     val shown = draft ?: saved
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DateField("Start", startDate, Modifier.weight(1f)) { startDate = it }
+            OutlinedTextField(startKg, { startKg = it }, Modifier.weight(1f), label = { Text("Start kg") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (startDate != LocalDate.now()) TextButton(onClick = { startDate = LocalDate.now() }) { Text("Start today") }
+            if (latest != null && startKg.num()?.let(::kg) != kg(latest.second)) TextButton(onClick = { startKg = kg(latest.second) }) {
+                Text("Latest: ${kg(latest.second)} kg, ${dmy.format(latest.first)}")
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             DateField("Target", targetDate, Modifier.weight(1f)) { targetDate = it }
             OutlinedTextField(targetKg, { targetKg = it }, Modifier.weight(1f), label = { Text("Target kg") }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
         }
-        when {
-            p == null -> {}
-            latest != null -> Note("Starts today from your latest weight: ${plain(latest.second)} kg on ${dmy.format(latest.first)} (Health Connect).")
-            else -> {
-                Note(if (p.canReadWeight) "No weight in Health Connect yet: type today's." else "Michelle can't read your weight yet: allow it, or type today's.")
-                OutlinedTextField(typedKg, { typedKg = it }, Modifier.fillMaxWidth(), label = { Text("Current kg") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-            }
-        }
+        if (p != null && latest == null) Note(
+            if (p.canReadWeight) "No weight in Health Connect yet: type the start weight." else "Michelle can't read your weight yet: allow it, or type the start weight."
+        )
         if (draft != null) Note("%.2f kg a week, %d days".format(draft.paceKgPerWeek(), ChronoUnit.DAYS.between(draft.startDate, draft.targetDate)))
-        else if (tKg != null && !targetDate.isAfter(LocalDate.now())) Text("The target date must be in the future.", color = MaterialTheme.colorScheme.error)
-        saved?.let { Note("Saved: ${plain(it.startKg)} kg on ${dmy.format(it.startDate)} → ${plain(it.targetKg)} kg on ${dmy.format(it.targetDate)}.") }
+        else if (tKg != null && !targetDate.isAfter(startDate)) Text("The target date must be after the start.", color = MaterialTheme.colorScheme.error)
+        saved?.let { Note("Saved: ${kg(it.startKg)} kg on ${dmy.format(it.startDate)} → ${kg(it.targetKg)} kg on ${dmy.format(it.targetDate)}.") }
 
         Text("Profile, for the calories", style = MaterialTheme.typography.titleSmall)
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -153,13 +157,14 @@ fun GoalSection() {
                 message = "Saved."
                 scope.launch {
                     if (app.health.available && !app.body.allGranted()) ask.launch(BodyReader.PERMISSIONS) else loads++
+                    onSaved()
                 }
             }, enabled = draft != null && profile != null && (draft != saved || profile != app.profiles.profile)) { Text("Save") }
             if (app.health.available && p != null && !p.canReadWeight) {
                 OutlinedButton(onClick = { ask.launch(BodyReader.PERMISSIONS) }) { Text("Allow reading weight") }
             }
         }
-        if (profile == null) Note("To save: target, sex, height and activity.")
+        if (profile == null || draft == null) Note("To save: start and target weights, sex, height and activity.")
         if (message.isNotEmpty()) Note(message)
     }
 }

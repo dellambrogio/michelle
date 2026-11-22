@@ -104,7 +104,7 @@ fun TodayScreen(onCamera: () -> Unit, onDescribe: () -> Unit, onOpen: (Long) -> 
                     }
                 },
                 actions = {
-                    IconButton(onClick = onTrend) { Icon(painterResource(R.drawable.ic_chart), "Trend") }
+                    IconButton(onClick = onTrend) { Icon(painterResource(R.drawable.ic_chart), "Plan") }
                     IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") }
                 },
             )

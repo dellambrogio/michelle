@@ -10,6 +10,9 @@ private val hm = DateTimeFormatter.ofPattern("HH:mm")
 
 fun clock(epochMs: Long): String = hm.format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()))
 
+/** A weight, 2 decimals: "80.00". */
+fun kg(x: Double): String = String.format(java.util.Locale.ENGLISH, "%.2f", x)
+
 fun grams(g: Double) = "${g.roundToInt()} g"
 
 fun macros(t: Totals) = "Protein ${grams(t.proteinG)} · Carbs ${grams(t.carbsG)} · Fat ${grams(t.fatG)}"

@@ -43,17 +43,17 @@ encrypted with a key from the Android Keystore; it's never logged. It can also b
 - Settings (gear): the key, the model (Opus 5.5 by default, about 2–4 cents a meal; Sonnet 5.5; Haiku
   5.5, a fraction of a cent), Health Connect permission and "sync now".
 
-## Goal and trend
+## Goal and plan
 
-Settings → Goal: only the target weight and date. The start is your latest weight in Health Connect,
-frozen when you save (re-saving starts again from the then-latest weight). Once, the profile: sex, birth
+Plan (chart icon) → Goal (Change): start date and weight (default today and your latest weight in Health
+Connect), target date and weight. Once, the profile: sex, birth
 date, height (from Health Connect if it's there) and activity level. The daily calorie target is worked
 out from them: Mifflin-St Jeor × activity for your current weight, minus what it takes to reach the
 target by the date (7700 kcal a kg), never below 1500 (men) / 1200 (women): if the plan needs less,
 Michelle says it's too fast. On saving it asks to read your weight and height from Health Connect.
 
 Weigh yourself in Google Health as before: Michelle only reads weights. Today then shows "of 1750 · 450
-left" (or over) and your latest weight against the plan for that day; the chart icon opens the trend:
+left" (or over); the chart icon opens the Plan screen:
 weights, the smoothed trend, the plan line to the target, and calories a day against the target, for
 the whole plan or the last 30 days. Calories eaten are Michelle's meals only.
 

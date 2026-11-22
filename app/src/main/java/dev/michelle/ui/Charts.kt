@@ -29,6 +29,7 @@ import kotlin.math.floor
 import kotlin.math.max
 
 private val dayMonth = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
+private val month = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH)
 private const val LEFT = 44f      // room for the y labels, in px at 1x (scaled by density below)
 private const val BOTTOM = 22f
 
@@ -47,12 +48,21 @@ private fun DrawScope.axes(f: Frame, ticks: List<Double>, label: (Double) -> Str
         val t = text.measure(label(v), style)
         drawText(t, topLeft = Offset(f.left - t.size.width - 6f, f.y(v) - t.size.height / 2))
     }
-    // dates: start, middle, end
-    val mid = f.from.plusDays(ChronoUnit.DAYS.between(f.from, f.to) / 2)
-    listOf(f.from, mid, f.to).distinct().forEach { d ->
-        val t = text.measure(dayMonth.format(d), style)
-        val x = (f.x(d) - t.size.width / 2).coerceIn(f.left, f.left + f.w - t.size.width)
-        drawText(t, topLeft = Offset(x, f.top + f.h + 4f))
+    // months along x: a faint line and the name at each month's first day
+    val months = generateSequence(f.from.withDayOfMonth(1).plusMonths(if (f.from.dayOfMonth == 1) 0 else 1)) { it.plusMonths(1) }
+        .takeWhile { !it.isAfter(f.to) }.toList()
+    var lastEnd = Float.NEGATIVE_INFINITY
+    // a short range may cross only one month start: label the first day too
+    val labels = (if (months.size < 2) listOf(f.from to dayMonth.format(f.from)) else emptyList()) +
+        months.map { it to month.format(it) }
+    months.forEach { d -> drawLine(grid, Offset(f.x(d), f.top), Offset(f.x(d), f.top + f.h), 1f) }
+    labels.sortedBy { it.first }.forEach { (d, s) ->
+        val t = text.measure(s, style)
+        val x = (f.x(d) + 4f).coerceAtMost(f.left + f.w - t.size.width)
+        if (x > lastEnd + 8f) {
+            drawText(t, topLeft = Offset(x, f.top + f.h + 4f))
+            lastEnd = x + t.size.width
+        }
     }
     if (!today.isBefore(f.from) && !today.isAfter(f.to)) {
         drawLine(ink.copy(alpha = 0.35f), Offset(f.x(today), f.top), Offset(f.x(today), f.top + f.h), 2f,
@@ -68,7 +78,7 @@ private fun niceTicks(lo: Double, hi: Double, count: Int = 4): List<Double> {
 
 /** Weights (dots), the smoothed trend (line), the plan (dashed line) and the target (ring) (R29). */
 @Composable
-fun WeightChart(from: LocalDate, to: LocalDate, today: LocalDate, weights: Map<LocalDate, Double>, trend: List<Pair<LocalDate, Double>>, goal: Goal?) {
+fun WeightChart(from: LocalDate, to: LocalDate, today: LocalDate, weights: Map<LocalDate, Double>, trend: List<Pair<LocalDate, Double>>, goal: Goal?, modifier: Modifier = Modifier.fillMaxWidth().height(240.dp)) {
     val text = rememberTextMeasurer()
     val c = MaterialTheme.colorScheme
     val inRange = { d: LocalDate -> !d.isBefore(from) && !d.isAfter(to) }
@@ -78,7 +88,7 @@ fun WeightChart(from: LocalDate, to: LocalDate, today: LocalDate, weights: Map<L
     val values = ws.values + ts.map { it.second } + planPts.map { it.second } + listOfNotNull(goal?.targetKg?.takeIf { inRange(goal.targetDate) })
     if (values.isEmpty()) return
     val lo = floor(values.min() - 0.5); val hi = ceil(values.max() + 0.5)
-    Canvas(Modifier.fillMaxWidth().height(240.dp)) {
+    Canvas(modifier) {
         val f = Frame(from, to, lo, hi, LEFT * density, 8f, size.width - LEFT * density - 8f, size.height - BOTTOM * density - 8f)
         axes(f, niceTicks(lo, hi), { "%.0f".format(it) }, text, c.onSurfaceVariant, c.outlineVariant, today)
         if (goal != null) {
@@ -97,12 +107,12 @@ fun WeightChart(from: LocalDate, to: LocalDate, today: LocalDate, weights: Map<L
 
 /** Calories eaten per day (bars), the daily target (dashed line); days over it in the warning color (R30). */
 @Composable
-fun KcalChart(from: LocalDate, to: LocalDate, today: LocalDate, kcal: Map<LocalDate, Int>, target: Int?) {
+fun KcalChart(from: LocalDate, to: LocalDate, today: LocalDate, kcal: Map<LocalDate, Int>, target: Int?, modifier: Modifier = Modifier.fillMaxWidth().height(180.dp)) {
     val text = rememberTextMeasurer()
     val c = MaterialTheme.colorScheme
     val shown = kcal.filterKeys { !it.isBefore(from) && !it.isAfter(to) }
     val hi = max((shown.values.maxOrNull() ?: 0), target ?: 0).let { if (it == 0) 2000.0 else it * 1.15 }
-    Canvas(Modifier.fillMaxWidth().height(180.dp)) {
+    Canvas(modifier) {
         val f = Frame(from, to, 0.0, hi, LEFT * density, 8f, size.width - LEFT * density - 8f, size.height - BOTTOM * density - 8f)
         axes(f, niceTicks(0.0, hi, 3), { "%.0f".format(it) }, text, c.onSurfaceVariant, c.outlineVariant, today)
         val bar = (f.dayWidth * 0.7f).coerceAtLeast(2f)

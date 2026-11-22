@@ -98,7 +98,7 @@ class MainActivity : ComponentActivity() {
                             onTrend = { nav.navigate("trend") },
                         )
                     }
-                    composable("trend") { TrendScreen(onBack = { nav.popBackStack() }, onSettings = { nav.navigate("settings") }) }
+                    composable("trend") { TrendScreen(onBack = { nav.popBackStack() }) }
                     composable(
                         "meal/{id}?capture={capture}&describe={describe}",
                         arguments = listOf(
