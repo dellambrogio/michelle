@@ -1,0 +1,11 @@
+.tmp
+.secrets
+*.iml
+.gradle
+.kotlin
+/build
+/app/build
+/captures
+local.properties
+*.jks
+.DS_Store

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Michelle's whale: flat, light blue with a white belly, facing left -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:pivotX="56.5" android:pivotY="52.5" android:scaleX="0.75" android:scaleY="0.75"
+        android:translateX="-2.5" android:translateY="1.5">
+        <!-- tail fluke -->
+        <path android:fillColor="#3FB3DE"
+            android:pathData="M77,48 C73,45 70,38 69,30 L76,30 C78,33 78,38 77,43 C77,38 79,33 82,30 L89,30 C88,38 83,45 77,48 Z" />
+        <!-- body -->
+        <path android:fillColor="#3FB3DE" android:pathData="M24,49 C24,44 27,41 32,41 L44,41 C51,41 55,45 60,50 C64,54 69,55 73,50 L75,46 L80,46 C80,60 72,73 56,75 L32,75 C27,75 24,72 24,67 Z" />
+        <group>
+            <clip-path android:pathData="M24,49 C24,44 27,41 32,41 L44,41 C51,41 55,45 60,50 C64,54 69,55 73,50 L75,46 L80,46 C80,60 72,73 56,75 L32,75 C27,75 24,72 24,67 Z" />
+            <!-- belly -->
+            <path android:fillColor="#F7FAFF" android:pathData="M20,62 L64,62 L64,80 L20,80 Z" />
+        </group>
+        <!-- flipper -->
+        <path android:strokeColor="#1195CB" android:strokeWidth="6" android:strokeLineCap="round"
+            android:pathData="M51,63 L61,70" />
+        <!-- eye -->
+        <path android:fillColor="#13294B"
+            android:pathData="M40,53 m-2.3,0 a2.3,2.3 0,1 0,4.6 0 a2.3,2.3 0,1 0,-4.6 0" />
+    </group>
+</vector>
