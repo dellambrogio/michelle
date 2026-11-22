@@ -1,5 +1,6 @@
 .tmp
 .secrets
+.backup
 *.iml
 .gradle
 .kotlin

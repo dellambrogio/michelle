@@ -34,7 +34,7 @@ encrypted with a key from the Android Keystore; it's never logged. It can also b
 
 ## Using it
 
-- **Photo** (bottom right): the Pixel camera opens; take the picture and confirm. Claude needs a few
+- **Photo** or **Manual** (bottom right; Manual: describe it in words and let Claude estimate, or type the numbers yourself): the Pixel camera opens; take the picture and confirm. Claude needs a few
   seconds (about 6 s with Opus 5.5).
 - Check the items: change any food, portion, kcal or grams, remove items (×), add one. The title, the
   meal type (guessed from the time) and the time can be changed too. **Save**, or ✕ to discard.
@@ -42,6 +42,20 @@ encrypted with a key from the Android Keystore; it's never logged. It can also b
 - Tap a meal on Today to change or delete it; Health Connect follows.
 - Settings (gear): the key, the model (Opus 5.5 by default, about 2–4 cents a meal; Sonnet 5.5; Haiku
   5.5, a fraction of a cent), Health Connect permission and "sync now".
+
+## Goal and trend
+
+Settings → Goal: only the target weight and date. The start is your latest weight in Health Connect,
+frozen when you save (re-saving starts again from the then-latest weight). Once, the profile: sex, birth
+date, height (from Health Connect if it's there) and activity level. The daily calorie target is worked
+out from them: Mifflin-St Jeor × activity for your current weight, minus what it takes to reach the
+target by the date (7700 kcal a kg), never below 1500 (men) / 1200 (women): if the plan needs less,
+Michelle says it's too fast. On saving it asks to read your weight and height from Health Connect.
+
+Weigh yourself in Google Health as before: Michelle only reads weights. Today then shows "of 1750 · 450
+left" (or over) and your latest weight against the plan for that day; the chart icon opens the trend:
+weights, the smoothed trend, the plan line to the target, and calories a day against the target, for
+the whole plan or the last 30 days. Calories eaten are Michelle's meals only.
 
 Health Connect: Michelle asks once, after the first save, for permission to write nutrition (nothing
 else, it never reads). A meal that couldn't be written shows a small cloud icon and is written the next
@@ -77,8 +91,11 @@ app/src/main/java/dev/michelle/
   Secrets.kt, Settings.kt   the API key (Keystore-encrypted), the model
   ai/Analyzer.kt            Claude: the photo in, JSON out (structured output), errors
   ai/Prompt.kt, Analysis.kt what Claude is asked, the JSON schema, parsing
+  Goal.kt                   the goal (plan line, pace) and the profile; kept in the app's preferences
+  trend/                    the numbers: daily kcal, smoothed trend, calorie target; Progress loads them
+  health/BodyReader.kt      Health Connect, reading: weights, height
   data/                     Room: meals, items, Health Connect deletes still to do; meal types; totals
   photo/Photos.kt           camera file, upright, 1600 px JPEG in the app's files
   health/HealthWriter.kt    Health Connect: a meal = one NutritionRecord ("meal-<id>")
-  ui/                       Compose screens, theme (greens), photos
+  ui/                       Compose screens, charts (Canvas), goal settings, theme (greens), photos
 ```

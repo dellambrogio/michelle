@@ -115,6 +115,10 @@ fun SettingsScreen(onBack: () -> Unit, focusKey: Boolean = false) {
             }
 
             HorizontalDivider()
+            Section("Goal")
+            GoalSection()
+
+            HorizontalDivider()
             Section("Model")
             Settings.MODELS.forEach { m ->
                 Row(

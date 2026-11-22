@@ -47,6 +47,7 @@ class EditItem(name: String = "", portion: String = "", kcal: String = "", prote
 sealed interface Phase {
     data object Preparing : Phase                    // the photo is being shrunk
     data object Analyzing : Phase
+    data object Describing : Phase                   // no photo: the description to estimate (R33)
     data class NoFood(val note: String) : Phase
     data class Failed(val trouble: Trouble, val detail: String?) : Phase
     data object Editing : Phase
@@ -62,9 +63,23 @@ class MealViewModel(application: Application) : AndroidViewModel(application) {
     var photoPath by mutableStateOf<String?>(null); private set
     var title by mutableStateOf("")
     var mealType by mutableStateOf(MealType.SNACK)
+        private set
     var time by mutableStateOf(LocalDateTime.now())
+        private set
+    private var typeChosen = false                   // the meal type was picked by hand: the time no longer changes it
+
+    fun pickType(t: MealType) { mealType = t; typeChosen = true }
+
+    /** A new date or time; the meal type follows the time unless it was picked by hand (R6, R7). */
+    fun setWhen(t: LocalDateTime) {
+        time = t
+        if (!typeChosen) mealType = MealType.fromTime(t.toLocalTime())
+    }
     var note by mutableStateOf("")
     val items = mutableStateListOf<EditItem>()
+    var description by mutableStateOf("")
+    var manualKcal by mutableStateOf("")             // typed on the manual screen, instead of estimating
+    private var described = false                    // the last estimate was from words, not a photo
     private var raw: String? = null
     private var model: String? = null
 
@@ -72,7 +87,7 @@ class MealViewModel(application: Application) : AndroidViewModel(application) {
     val totals get() = Totals.of(items.map { it.toItem() })
 
     /** Open a saved meal (id > 0) or start a new one from a captured photo. */
-    fun start(id: Long, capture: String?) {
+    fun start(id: Long, capture: String?, describe: Boolean = false) {
         if (started) return
         started = true
         viewModelScope.launch {
@@ -82,11 +97,16 @@ class MealViewModel(application: Application) : AndroidViewModel(application) {
                 photoPath = m.meal.photoPath
                 title = m.meal.title
                 mealType = MealType.of(m.meal.mealType)
+                typeChosen = true
                 time = LocalDateTime.ofInstant(Instant.ofEpochMilli(m.meal.time), ZoneId.systemDefault())
                 raw = m.meal.rawAnalysis
                 model = m.meal.model
                 m.sorted.forEach { items += EditItem(it.name, it.portion, it.kcal.toString(), plain(it.proteinG), plain(it.carbsG), plain(it.fatG)) }
                 phase = Phase.Editing
+            } else if (describe) {
+                time = LocalDateTime.now()
+                mealType = MealType.fromTime(LocalTime.now())
+                phase = Phase.Describing
             } else {
                 time = LocalDateTime.now()
                 mealType = MealType.fromTime(LocalTime.now())
@@ -99,22 +119,38 @@ class MealViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun analyze() {
+        if (described) return estimate()
         val path = photoPath ?: return
         phase = Phase.Analyzing
-        viewModelScope.launch {
-            when (val o = app.analyzer.analyze(File(path))) {
-                is Outcome.Failed -> phase = Phase.Failed(o.trouble, o.detail)
-                is Outcome.Done -> {
-                    raw = o.raw
-                    model = o.model
-                    if (!o.analysis.food) phase = Phase.NoFood(o.analysis.note) else fill(o.analysis)
-                }
+        viewModelScope.launch { take(app.analyzer.analyze(File(path))) }
+    }
+
+    /** Claude estimates the meal from [description] (R34). */
+    fun estimate() {
+        if (description.isBlank()) return
+        described = true
+        phase = Phase.Analyzing
+        viewModelScope.launch { take(app.analyzer.describe(description)) }
+    }
+
+    private fun take(o: Outcome) {
+        when (o) {
+            is Outcome.Failed -> phase = Phase.Failed(o.trouble, o.detail)
+            is Outcome.Done -> {
+                raw = o.raw
+                model = o.model
+                if (!o.analysis.food) phase = Phase.NoFood(o.analysis.note) else fill(o.analysis)
             }
         }
     }
 
+    /** Back to the description, to change it. */
+    fun redescribe() { phase = Phase.Describing }
+
+    val isDescribed get() = photoPath == null
+
     private fun fill(a: Analysis) {
-        title = a.title
+        title = a.title.ifBlank { description.trim().take(60) }
         note = a.note
         items.clear()
         a.items.forEach { items += EditItem(it.name, it.portion, it.kcal.roundToInt().toString(), plain(it.proteinG), plain(it.carbsG), plain(it.fatG)) }
@@ -126,6 +162,17 @@ class MealViewModel(application: Application) : AndroidViewModel(application) {
         if (items.isEmpty()) items += EditItem()
         phase = Phase.Editing
     }
+
+    /** Manual screen, kcal typed: one item named after the description (R33). */
+    fun saveManual(onSaved: () -> Unit) {
+        val name = description.trim().ifBlank { "Food" }
+        items.clear()
+        items += EditItem(name = name, kcal = manualKcal.trim())
+        if (title.isBlank()) title = name.take(60)
+        save(onSaved)
+    }
+
+    val manualKcalOk get() = EditItem.num(manualKcal) > 0
 
     fun addItem() { items += EditItem() }
     fun removeItem(i: EditItem) { items.remove(i) }

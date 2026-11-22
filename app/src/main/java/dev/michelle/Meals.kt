@@ -16,6 +16,11 @@ class Meals(private val dao: MealDao, private val health: HealthWriter, private 
         dao.between(day.atStartOfDay(zone).toInstant().toEpochMilli(), day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli())
     }
 
+    /** Meals from day [from] to day [to], both included. */
+    fun range(from: LocalDate, to: LocalDate) = ZoneId.systemDefault().let { zone ->
+        dao.between(from.atStartOfDay(zone).toInstant().toEpochMilli(), to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli())
+    }
+
     suspend fun get(id: Long) = dao.get(id)
 
     suspend fun save(meal: Meal, items: List<Item>): Long {

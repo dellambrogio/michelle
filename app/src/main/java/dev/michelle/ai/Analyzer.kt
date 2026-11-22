@@ -63,12 +63,28 @@ class Analyzer(private val secrets: Secrets, private val settings: Settings) {
         return client
     }
 
-    suspend fun analyze(photo: File): Outcome = withContext(Dispatchers.IO) {
+    /** What's in the photo. */
+    suspend fun analyze(photo: File): Outcome = run(Prompt.SYSTEM) {
+        val image = BetaImageBlockParam.builder().source(
+            BetaImageBlockParam.Source.ofBase64(
+                BetaBase64ImageSource.builder()
+                    .mediaType(BetaBase64ImageSource.MediaType.IMAGE_JPEG)
+                    .data(Base64.encodeToString(photo.readBytes(), Base64.NO_WRAP))
+                    .build()
+            )
+        ).build()
+        listOf(BetaContentBlockParam.ofImage(image), BetaContentBlockParam.ofText(Prompt.ASK))
+    }
+
+    /** What's in a meal described in words (R34). */
+    suspend fun describe(text: String): Outcome = run(Prompt.SYSTEM_TEXT) { listOf(BetaContentBlockParam.ofText(text.trim())) }
+
+    private suspend fun run(system: String, content: () -> List<BetaContentBlockParam>): Outcome = withContext(Dispatchers.IO) {
         val client = client() ?: return@withContext Outcome.Failed(Trouble.NO_KEY)
         val model = settings.model
         val started = System.currentTimeMillis()
         try {
-            val response = client.beta().messages().create(params(model, photo))
+            val response = client.beta().messages().create(params(model, system, content()))
             val took = System.currentTimeMillis() - started
             val stop = response.stopReason().orElse(null)
             Log.i(TAG, "analysis by ${response.model()} in $took ms, stop=$stop")
@@ -91,27 +107,15 @@ class Analyzer(private val secrets: Secrets, private val settings: Settings) {
         }
     }
 
-    private fun params(model: String, photo: File): MessageCreateParams {
-        val image = BetaImageBlockParam.builder().source(
-            BetaImageBlockParam.Source.ofBase64(
-                BetaBase64ImageSource.builder()
-                    .mediaType(BetaBase64ImageSource.MediaType.IMAGE_JPEG)
-                    .data(Base64.encodeToString(photo.readBytes(), Base64.NO_WRAP))
-                    .build()
-            )
-        ).build()
+    private fun params(model: String, system: String, content: List<BetaContentBlockParam>): MessageCreateParams {
         val schema = BetaJsonOutputFormat.Schema.builder()
             .putAllAdditionalProperties(Prompt.SCHEMA.mapValues { JsonValue.from(it.value) })
             .build()
         val builder = MessageCreateParams.builder()
             .model(model)
             .maxTokens(16000L)
-            .system(Prompt.SYSTEM)
-            .addUserMessage(
-                BetaMessageContentParam.ofContentBlockParams(
-                    listOf(BetaContentBlockParam.ofImage(image), BetaContentBlockParam.ofText(Prompt.ASK))
-                )
-            )
+            .system(system)
+            .addUserMessage(BetaMessageContentParam.ofContentBlockParams(content))
             // counting food doesn't need deep thought
             .outputConfig(
                 BetaOutputConfig.builder()

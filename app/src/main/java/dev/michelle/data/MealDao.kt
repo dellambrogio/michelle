@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MealDao {
     @Transaction
-    @Query("SELECT * FROM meal WHERE time >= :from AND time < :to ORDER BY time DESC")
+    @Query("SELECT * FROM meal WHERE time >= :from AND time < :to ORDER BY time ASC")
     fun between(from: Long, to: Long): Flow<List<MealWithItems>>
 
     @Transaction

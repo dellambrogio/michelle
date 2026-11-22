@@ -26,8 +26,8 @@ class PermissionsRationaleActivity : ComponentActivity() {
                         Text("Michelle and your health data", style = MaterialTheme.typography.headlineSmall)
                         Text(
                             "Michelle writes each meal you save (calories, protein, carbohydrate, fat, meal type and time) " +
-                                "to Health Connect, so your other health apps can see what you ate. It never reads anything " +
-                                "from Health Connect. Your photos and meals stay on this phone; only the photo is sent to " +
+                                "to Health Connect, so your other health apps can see what you ate. It reads your weight and " +
+                                "height, to show your progress against your goal; it never writes those. Your photos and meals stay on this phone; only the photo is sent to " +
                                 "Anthropic to estimate the calories."
                         )
                         Button(onClick = { finish() }) { Text("OK") }

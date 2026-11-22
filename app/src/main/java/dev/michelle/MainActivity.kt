@@ -24,6 +24,7 @@ import dev.michelle.ui.MealScreen
 import dev.michelle.ui.MichelleTheme
 import dev.michelle.ui.SettingsScreen
 import dev.michelle.ui.TodayScreen
+import dev.michelle.ui.TrendScreen
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -91,20 +92,25 @@ class MainActivity : ComponentActivity() {
                     composable("today") {
                         TodayScreen(
                             onCamera = takePhoto,
+                            onDescribe = { nav.navigate("meal/0?describe=true") },
                             onOpen = { nav.navigate("meal/$it") },
                             onSettings = { nav.navigate("settings") },
+                            onTrend = { nav.navigate("trend") },
                         )
                     }
+                    composable("trend") { TrendScreen(onBack = { nav.popBackStack() }, onSettings = { nav.navigate("settings") }) }
                     composable(
-                        "meal/{id}?capture={capture}",
+                        "meal/{id}?capture={capture}&describe={describe}",
                         arguments = listOf(
                             navArgument("id") { type = NavType.LongType },
                             navArgument("capture") { type = NavType.StringType; nullable = true },
+                            navArgument("describe") { type = NavType.BoolType; defaultValue = false },
                         ),
                     ) { entry ->
                         MealScreen(
                             id = entry.arguments?.getLong("id") ?: 0,
                             capture = entry.arguments?.getString("capture"),
+                            describe = entry.arguments?.getBoolean("describe") == true,
                             onDone = { nav.popBackStack("today", inclusive = false) },
                             onRetake = { nav.popBackStack("today", inclusive = false); takePhoto() },
                             onSettings = { nav.navigate("settings") },

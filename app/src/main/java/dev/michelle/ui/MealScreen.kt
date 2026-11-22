@@ -25,6 +25,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,12 +60,13 @@ import dev.michelle.data.MealType
 import java.time.format.DateTimeFormatter
 
 private val hm = DateTimeFormatter.ofPattern("HH:mm")
+private val dayFormat = DateTimeFormatter.ofPattern("EEE d MMM yyyy", java.util.Locale.ENGLISH)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealScreen(id: Long, capture: String?, onDone: () -> Unit, onRetake: () -> Unit, onSettings: () -> Unit, onSaved: () -> Unit) {
+fun MealScreen(id: Long, capture: String?, describe: Boolean, onDone: () -> Unit, onRetake: () -> Unit, onSettings: () -> Unit, onSaved: () -> Unit) {
     val vm: MealViewModel = viewModel()
-    LaunchedEffect(Unit) { vm.start(id, capture) }
+    LaunchedEffect(Unit) { vm.start(id, capture, describe) }
     LaunchedEffect(vm.phase) { if (vm.phase == Phase.Done) onDone() }
     var confirmDelete by remember { mutableStateOf(false) }
     BackHandler { if (vm.isNew) vm.discard() else onDone() }
@@ -70,7 +74,7 @@ fun MealScreen(id: Long, capture: String?, onDone: () -> Unit, onRetake: () -> U
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (vm.isNew) "New meal" else "Meal") },
+                title = { Text(if (!vm.isNew) "Meal" else if (vm.isDescribed) "New meal, manual" else "New meal") },
                 navigationIcon = {
                     IconButton(onClick = { if (vm.isNew) vm.discard() else onDone() }) {
                         Icon(if (vm.isNew) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack, if (vm.isNew) "Discard" else "Back")
@@ -86,15 +90,38 @@ fun MealScreen(id: Long, capture: String?, onDone: () -> Unit, onRetake: () -> U
             Modifier.fillMaxSize().padding(pad).imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Photo(vm.photoPath, 800, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(12.dp)))
+            if (vm.photoPath != null) Photo(vm.photoPath, 800, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(12.dp)))
             when (val p = vm.phase) {
                 Phase.Preparing, Phase.Analyzing -> Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(24.dp))
                     Spacer(Modifier.size(12.dp))
-                    Text(if (p == Phase.Preparing) "Preparing the photo…" else "Claude is looking at your meal…")
+                    Text(if (p == Phase.Preparing) "Preparing the photo…" else if (vm.isDescribed) "Claude is working it out…" else "Claude is looking at your meal…")
                 }
-                is Phase.NoFood -> Message("No food found in this photo." + if (p.note.isNotBlank()) "\n${p.note}" else "") {
-                    Button(onClick = { vm.discard(); onRetake() }) { Text("Retake") }
+                Phase.Describing -> {
+                    OutlinedTextField(
+                        vm.description, { vm.description = it }, Modifier.fillMaxWidth(),
+                        label = { Text("What did you eat?") },
+                        placeholder = { Text("e.g. 2 eggs, toast with butter, coffee with milk") },
+                        minLines = 3,
+                    )
+                    WhenRow(vm)
+                    // type the kcal, or let Claude estimate them from the description (then the items open)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            vm.manualKcal, { vm.manualKcal = it }, Modifier.weight(1f),
+                            label = { Text("kcal") }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+                        OutlinedButton(onClick = vm::estimate, enabled = vm.description.isNotBlank()) { Text("Estimate") }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                        TextButton(onClick = vm::discard) { Text("Discard") }
+                        Button(onClick = { vm.saveManual(onSaved) }, enabled = vm.manualKcalOk) { Text("Save") }
+                    }
+                }
+                is Phase.NoFood -> Message((if (vm.isDescribed) "No food in that description." else "No food found in this photo.") + if (p.note.isNotBlank()) "\n${p.note}" else "") {
+                    if (vm.isDescribed) Button(onClick = vm::redescribe) { Text("Change it") }
+                    else Button(onClick = { vm.discard(); onRetake() }) { Text("Retake") }
                     OutlinedButton(onClick = vm::byHand) { Text("Enter by hand") }
                     TextButton(onClick = vm::discard) { Text("Discard") }
                 }
@@ -133,7 +160,6 @@ private fun Message(text: String, buttons: @Composable () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Editor(vm: MealViewModel, onSaved: () -> Unit) {
-    var pickTime by remember { mutableStateOf(false) }
     val t = vm.totals
     Text("${t.kcal} kcal", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
     Text(macros(t), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -144,12 +170,12 @@ private fun Editor(vm: MealViewModel, onSaved: () -> Unit) {
         MealType.entries.forEachIndexed { i, type ->
             SegmentedButton(
                 selected = vm.mealType == type,
-                onClick = { vm.mealType = type },
+                onClick = { vm.pickType(type) },
                 shape = SegmentedButtonDefaults.itemShape(i, MealType.entries.size),
             ) { Text(type.label, maxLines = 1) }
         }
     }
-    OutlinedButton(onClick = { pickTime = true }) { Text("Time: ${hm.format(vm.time)}") }
+    WhenRow(vm)
 
     vm.items.forEach { item -> ItemCard(item) { vm.removeItem(item) } }
     OutlinedButton(onClick = vm::addItem) {
@@ -162,13 +188,33 @@ private fun Editor(vm: MealViewModel, onSaved: () -> Unit) {
         Button(onClick = { vm.save(onSaved) }, enabled = vm.items.isNotEmpty()) { Text("Save") }
     }
 
+}
+
+/** Date and time of the meal, default now (R6). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WhenRow(vm: MealViewModel) {
+    var pickTime by remember { mutableStateOf(false) }
+    var pickDate by remember { mutableStateOf(false) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { pickDate = true }) { Text(dayFormat.format(vm.time)) }
+        OutlinedButton(onClick = { pickTime = true }) { Text(hm.format(vm.time)) }
+        if (vm.time.toLocalDate() != java.time.LocalDate.now() || java.time.Duration.between(vm.time, java.time.LocalDateTime.now()).abs().toMinutes() > 1)
+            TextButton(onClick = { vm.setWhen(java.time.LocalDateTime.now()) }) { Text("Now") }
+    }
+    if (vm.time.toLocalDate() != java.time.LocalDate.now()) Text(
+        "Not today: you'll find it on its day with the arrows at the top of the home screen.",
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    if (pickDate) MealDatePicker(vm) { pickDate = false }
     if (pickTime) {
         val state = rememberTimePickerState(vm.time.hour, vm.time.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { pickTime = false },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.time = vm.time.withHour(state.hour).withMinute(state.minute)
+                    vm.setWhen(vm.time.withHour(state.hour).withMinute(state.minute))
                     pickTime = false
                 }) { Text("OK") }
             },
@@ -176,6 +222,28 @@ private fun Editor(vm: MealViewModel, onSaved: () -> Unit) {
             text = { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { TimePicker(state) } },
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MealDatePicker(vm: MealViewModel, onClose: () -> Unit) {
+    // the date picker works in UTC milliseconds at midnight
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = vm.time.toLocalDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
+    )
+    DatePickerDialog(
+        onDismissRequest = onClose,
+        confirmButton = {
+            TextButton(onClick = {
+                state.selectedDateMillis?.let {
+                    val d = java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                    vm.setWhen(vm.time.with(d))
+                }
+                onClose()
+            }) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onClose) { Text("Cancel") } },
+    ) { DatePicker(state) }
 }
 
 @Composable
