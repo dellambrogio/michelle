@@ -15,6 +15,14 @@ android {
         versionName = "0.1"
         ndk { abiFilters += "arm64-v8a" }
     }
+    // -Pdemo: a separate app (dev.michelle.demo) for the emulator, with made-up meals and weights for the
+    // README screenshots (tools/screenshots.sh); it never touches the real app's data
+    if (providers.gradleProperty("demo").isPresent) {
+        defaultConfig.applicationIdSuffix = ".demo"
+        defaultConfig.ndk.abiFilters += "x86_64"
+        sourceSets["debug"].kotlin.directories += "src/demo/java"
+        sourceSets["debug"].manifest.srcFile("src/demo/AndroidManifest.xml")
+    }
     // the release key lives outside the repo: MICHELLE_KEYSTORE, MICHELLE_KEYSTORE_PASSWORD, MICHELLE_KEY_ALIAS
     // in ~/.gradle/gradle.properties; without them the release APK comes out unsigned
     val keystore = providers.gradleProperty("MICHELLE_KEYSTORE").orNull

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Demo builds only (-Pdemo): writes made-up weights into the emulator's Health Connect. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.health.WRITE_WEIGHT" />
+    <application>
+        <activity android:name=".DemoSeedActivity" android:exported="true" />
+    </application>
+</manifest>

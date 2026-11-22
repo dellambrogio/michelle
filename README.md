@@ -6,6 +6,12 @@ your other health apps see it. The home screen shows today's meals and the day's
 
 For one person on a Pixel 10 (Android 16), installed over USB. Uses your own Anthropic API key.
 
+<p>
+  <img src="docs/today.png" width="260" alt="Today: the day's calories against the target, and the meals">
+  <img src="docs/meal.png" width="260" alt="A meal: the photo, calories and macros, and each food, editable">
+  <img src="docs/plan.png" width="260" alt="Plan: weight against the plan line, and calories a day against the target">
+</p>
+
 ## Build and run
 
 Needs the Android SDK in `~/Android/Sdk` (platform 36, build-tools 36.1.0) and JDK 21. A phone with USB debugging on, then:
@@ -84,10 +90,19 @@ adb logcat -s michelle     # timing and Claude's JSON
 
 Delete the test meal afterwards (open it → trash).
 
+## Screenshots
+
+The pictures above come from an emulator with made-up meals and weights, never from a phone in use:
+start one (`android emulator create medium_phone && android emulator start medium_phone`), then
+`just screenshots`. It builds a separate demo app (`-Pdemo`: `dev.michelle.demo`, with
+`app/src/demo/`, which seeds the data), installs it on the emulator and saves `docs/*.png`. The food
+photos are CC0, from Wikimedia Commons.
+
 ## Layout
 
 ```
 tools/set-key.sh            the API key onto the phone
+tools/screenshots.sh        the README screenshots, from an emulator (made-up data)
 app/src/main/java/dev/michelle/
   App.kt                    the app's parts; syncs Health Connect on start
   MainActivity.kt           the screens (Today, Meal, Settings) and the camera

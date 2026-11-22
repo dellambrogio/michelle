@@ -65,3 +65,7 @@ restore file: backup
     {{adb}} shell am force-stop {{app}}
     {{adb}} exec-in run-as {{app}} tar xf - < "{{file}}"
     @echo "restored {{file}}; start it with: just run"
+
+# README screenshots into docs/, from the running emulator with made-up data (never the phone)
+screenshots:
+    tools/screenshots.sh
