@@ -86,12 +86,12 @@ fun TrendScreen(onBack: () -> Unit) {
             }
             val editing = editGoal || g == null
             if (!editing) {
-                val (from, to) = if (g != null && plan) g.startDate to g.targetDate else p.today.minusDays(29) to p.today
+                val (from, to) = range(g, plan, p.today)
                 Caption("Weight, kg")
                 if (p.weights.isEmpty()) Caption("No weights yet.")
-                else WeightChart(from, to, p.today, p.weights, p.trend, g, Modifier.fillMaxWidth().weight(1f))
+                else WeightChart(from, to, p.today, p.weights, g, app.settings.prediction, Modifier.fillMaxWidth().weight(1f))
                 Caption("Calories a day" + (p.kcalTarget?.let { ", target $it" } ?: ""))
-                KcalChart(from, if (to.isAfter(p.today) && !plan) p.today else to, p.today, p.kcal, p.kcalTarget, Modifier.fillMaxWidth().weight(1f))
+                KcalChart(from, to, p.today, p.kcal, p.kcalTarget, Modifier.fillMaxWidth().weight(1f))
             }
             if (editing) {
                 if (g == null) Caption("Set your goal to see the plan.")
@@ -99,6 +99,17 @@ fun TrendScreen(onBack: () -> Unit) {
             }
         }
     }
+}
+
+/**
+ * The days the graphs show. Whole plan: from the first day of the start's month to the last day of the target's month.
+ * 30 days: the last 30 days, but never before the plan starts — a plan younger than 30 days shows the days ahead instead.
+ */
+private fun range(g: dev.michelle.Goal?, plan: Boolean, today: java.time.LocalDate): Pair<java.time.LocalDate, java.time.LocalDate> {
+    if (g == null) return today.minusDays(29) to today
+    if (plan) return g.startDate.withDayOfMonth(1) to g.targetDate.withDayOfMonth(g.targetDate.lengthOfMonth())
+    val from = maxOf(today.minusDays(29), minOf(g.startDate, today))
+    return from to from.plusDays(29)
 }
 
 @Composable

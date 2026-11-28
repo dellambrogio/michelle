@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.michelle.App
+import dev.michelle.Prediction
 import dev.michelle.Settings
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,6 +57,7 @@ fun SettingsScreen(onBack: () -> Unit, focusKey: Boolean = false) {
     var hasKey by remember { mutableStateOf(app.secrets.apiKey != null) }
     var key by remember { mutableStateOf("") }
     var model by remember { mutableStateOf(app.settings.model) }
+    var prediction by remember { mutableStateOf(app.settings.prediction) }
     var granted by remember { mutableStateOf<Boolean?>(null) }
     var checks by remember { mutableIntStateOf(0) }
     val unsynced by app.meals.unsyncedCount.collectAsState(0)
@@ -125,6 +127,21 @@ fun SettingsScreen(onBack: () -> Unit, focusKey: Boolean = false) {
                     Column(Modifier.padding(start = 8.dp)) {
                         Text(m)
                         Text(MODEL_NOTES[m].orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            HorizontalDivider()
+            Section("Prediction on the weight graph")
+            Prediction.entries.forEach { k ->
+                Row(
+                    Modifier.fillMaxWidth().selectable(k == prediction) { prediction = k; app.settings.prediction = k },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(k == prediction, null)
+                    Column(Modifier.padding(start = 8.dp)) {
+                        Text(k.label)
+                        Text(k.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
