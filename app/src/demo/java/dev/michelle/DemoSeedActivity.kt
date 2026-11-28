@@ -86,5 +86,19 @@ class DemoSeedActivity : Activity() {
         }
         hc.insertRecords(weights)
         Log.i("michelle", "demo seed: ${weights.size} weights")
+
+        // a made-up review, as if Claude had written it this morning (no API call in the demo)
+        app.reviews.save(DEMO_REVIEW, System.currentTimeMillis(), today.minusDays(14), today.minusDays(1), 14, "claude-opus-5-5")
     }
 }
+
+private const val DEMO_REVIEW = """{
+"headline": "A steady two weeks: about 1,790 kcal a day, a little under your 1,850 target, and your weight is following the plan.",
+"points": [
+ {"title": "Weekends run higher", "text": "Saturdays and Sundays averaged about 1,950 kcal, some 250 more than weekdays, and three of the four days over the target were weekend days."},
+ {"title": "Weight on track", "text": "Your weighings are going down about half a kilo a week, within a few hundred grams of the plan line."},
+ {"title": "Protein could be higher", "text": "Around 90 g a day, a fifth of your calories. Yogurt at breakfast is a good start: Greek yogurt instead of plain would add about 10 g."},
+ {"title": "Good snacks", "text": "Fruit and a handful of almonds in the afternoon keep you away from the vending machine; 20 g of almonds is 115 kcal, so one handful is the right amount."}
+],
+"focus": "At the weekend, have the pasta with a big salad and skip the second helping: about 250 kcal less each day, enough to bring Saturday and Sunday in line with the target."
+}"""

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # README screenshots from an emulator, with made-up data: builds the demo app (dev.michelle.demo, -Pdemo),
-# installs it on the running emulator, seeds it (DemoSeedActivity), and captures Today, a meal and the Plan
+# installs it on the running emulator, seeds it (DemoSeedActivity), and captures Today, a meal, the Plan and the Review
 # into docs/. Only ever talks to the emulator: the phone and its real data are never touched.
 # Start the emulator first, e.g.: android emulator create medium_phone && android emulator start medium_phone
 set -euo pipefail
@@ -55,4 +55,7 @@ shot meal
 a shell input keyevent 4; sleep 2
 a shell input tap 880 148           # Plan
 sleep 3; shot plan
+a shell input keyevent 4; sleep 2
+a shell input tap 157 2150          # Review, bottom left
+shot review
 demo exit

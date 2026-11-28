@@ -7,9 +7,10 @@ your other health apps see it. The home screen shows today's meals and the day's
 For one person on a Pixel 10 (Android 16), installed over USB. Uses your own Anthropic API key.
 
 <p>
-  <img src="docs/today.png" width="260" alt="Today: the day's calories against the target, and the meals">
-  <img src="docs/meal.png" width="260" alt="A meal: the photo, calories and macros, and each food, editable">
-  <img src="docs/plan.png" width="260" alt="Plan: weight against the plan line, and calories a day against the target">
+  <img src="docs/today.png" width="200" alt="Today: the day's calories against the target, and the meals">
+  <img src="docs/meal.png" width="200" alt="A meal: the photo, calories and macros, and each food, editable">
+  <img src="docs/plan.png" width="200" alt="Plan: weight against the plan line, and calories a day against the target">
+  <img src="docs/review.png" width="200" alt="Review: Claude looks back at two weeks of meals">
 </p>
 
 ## Build and run
@@ -126,7 +127,7 @@ tools/set-key.sh            the API key onto the phone
 tools/screenshots.sh        the README screenshots, from an emulator (made-up data)
 app/src/main/java/dev/michelle/
   App.kt                    the app's parts; syncs Health Connect on start
-  MainActivity.kt           the screens (Today, Meal, Settings) and the camera
+  MainActivity.kt           the screens (Today, Meal, Plan, Review, Settings) and the camera
   Meals.kt                  save/delete: the database first, Health Connect after
   Secrets.kt, Settings.kt   the API key (Keystore-encrypted), the model
   ai/Analyzer.kt            Claude: the photo in, JSON out (structured output), errors
