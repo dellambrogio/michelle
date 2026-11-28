@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import dev.michelle.App
 import dev.michelle.health.BodyReader
@@ -50,7 +52,17 @@ fun TrendScreen(onBack: () -> Unit) {
     var loads by remember { mutableIntStateOf(0) }
     var plan by remember { mutableStateOf(true) }
     var editGoal by remember { mutableStateOf(false) }
+    var syncing by remember { mutableStateOf(false) }
+    var syncs by remember { mutableIntStateOf(0) }
     LaunchedEffect(loads) { progress = Progress.load(app) }
+    // the sync button: meals out to Health Connect, then weights back in
+    LaunchedEffect(syncs) {
+        if (syncs == 0) return@LaunchedEffect
+        syncing = true
+        runCatching { app.meals.syncNow() }
+        progress = Progress.load(app)
+        syncing = false
+    }
     val ask = rememberLauncherForActivityResult(app.health.permissionContract) { loads++ }
 
     Scaffold(topBar = {
@@ -59,6 +71,10 @@ fun TrendScreen(onBack: () -> Unit) {
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             // the goal editor opens in place of the graphs (R22); without a goal it's open already
             actions = {
+                IconButton(onClick = { syncs++ }, enabled = !syncing) {
+                    if (syncing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    else Icon(painterResource(dev.michelle.R.drawable.ic_sync), "Sync")
+                }
                 val g = progress?.goal
                 if (g != null) TextButton(onClick = { editGoal = !editGoal }) { Text(if (editGoal) "Close" else "Change") }
             },

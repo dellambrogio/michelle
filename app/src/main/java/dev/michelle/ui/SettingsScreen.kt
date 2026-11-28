@@ -162,6 +162,12 @@ fun SettingsScreen(onBack: () -> Unit, focusKey: Boolean = false) {
                 if (granted == false) Button(onClick = { ask.launch(dev.michelle.health.HealthWriter.PERMISSIONS) }) { Text("Allow") }
                 if (granted == true) OutlinedButton(onClick = { app.meals.syncSoon() }, enabled = unsynced > 0) { Text("Sync now") }
             }
+
+            HorizontalDivider()
+            Text(
+                "Michelle ${dev.michelle.BuildConfig.VERSION_NAME} (${dev.michelle.BuildConfig.VERSION_CODE})",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

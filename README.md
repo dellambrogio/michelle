@@ -53,6 +53,22 @@ encrypted with a key from the Android Keystore; it's never logged. It can also b
 - Settings (gear): the key, the model (Opus 5.5 by default, about 2–4 cents a meal; Sonnet 5.5; Haiku
   5.5, a fraction of a cent), Health Connect permission and "sync now".
 
+## What it costs
+
+Each photo is one call to Claude: about 3,000–4,000 tokens in (the photo, 1600 px, plus the prompt and
+the JSON schema) and 500–1,500 out (low effort, the thinking and the JSON). With 4 photos a day, 120 a
+month, at the API prices of November 2026:
+
+| Model | $ per 1M tokens (in / out) | A photo | A month (4 a day) |
+|---|---|---|---|
+| Opus 5.5 (default) | 4 / 20 | 2–5 cents | about $2.60–5.50 |
+| Sonnet 5.5 | 2 / 10 | 1–2.5 cents | about $1.30–2.80 |
+| Haiku 5.5 | 0.10 / 0.50 | about 0.1 cent | about $0.10 |
+
+These are estimates: a busy plate means more items and more output. Manual meals described in words
+cost less (no photo); typing the numbers yourself costs nothing. The exact spend is in the Anthropic
+console under Usage.
+
 ## Goal and plan
 
 Plan (chart icon) → Goal (Change): start date and weight (default today and your latest weight in Health
@@ -64,8 +80,9 @@ Michelle says it's too fast. On saving it asks to read your weight and height fr
 
 Weigh yourself in Google Health as before: Michelle only reads weights. Today then shows "of 1750 · 450
 left" (or over); the chart icon opens the Plan screen:
-weights, the smoothed trend, the plan line to the target, and calories a day against the target, for
-the whole plan or the last 30 days. Calories eaten are Michelle's meals only.
+weights, the plan line to the target and a blue line where your weight is heading (robust or plain
+straight line, 7-day average or none: Settings), and calories a day against the target with their
+average, for the whole plan (in whole months) or 30 days. Calories eaten are Michelle's meals only.
 
 Health Connect: Michelle asks once, after the first save, for permission to write nutrition (nothing
 else, it never reads). A meal that couldn't be written shows a small cloud icon and is written the next
@@ -121,5 +138,5 @@ app/src/main/java/dev/michelle/
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The camera, chart, cloud-off and edit icons are
+MIT, see [LICENSE](LICENSE). The camera, chart, cloud-off, edit and sync icons are
 [Material icons](https://fonts.google.com/icons) by Google (Apache 2.0); the whale is Michelle's own.

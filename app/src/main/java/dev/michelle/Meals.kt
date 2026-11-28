@@ -38,5 +38,8 @@ class Meals(private val dao: MealDao, private val health: HealthWriter, private 
 
     fun syncSoon() = scope.launch { health.syncPending() }
 
+    /** Writes what Health Connect is still missing, and returns when done (the sync button). */
+    suspend fun syncNow() = health.syncPending()
+
     val unsyncedCount get() = dao.unsyncedCount()
 }
