@@ -7,10 +7,10 @@ your other health apps see it. The home screen shows today's meals and the day's
 For one person on a Pixel 10 (Android 16), installed over USB. Uses your own Anthropic API key.
 
 <p>
-  <img src="docs/today.png?v=2" width="200" alt="Today: the day's calories against the target, and the meals">
-  <img src="docs/meal.png?v=2" width="200" alt="A meal: the photo, calories and macros, and each food, editable">
-  <img src="docs/plan.png?v=2" width="200" alt="Plan: weight against the plan line, and calories a day against the target">
-  <img src="docs/review.png?v=2" width="200" alt="Review: Claude looks back at two weeks of meals">
+  <img src="docs/today.png" width="200" alt="Today: the day's calories against the target, and the meals">
+  <img src="docs/meal.png" width="200" alt="A meal: the photo, calories and macros, and each food, editable">
+  <img src="docs/plan.png" width="200" alt="Plan: weight against the plan line, and calories a day against the target">
+  <img src="docs/review.png" width="200" alt="Review: Claude looks back at two weeks of meals">
 </p>
 
 ## Build and run
@@ -117,7 +117,7 @@ Delete the test meal afterwards (open it → trash).
 The pictures above come from an emulator with made-up meals and weights, never from a phone in use:
 start one (`android emulator create medium_phone && android emulator start medium_phone`), then
 `just screenshots`. It builds a separate demo app (`-Pdemo`: `dev.michelle.demo`, with
-`app/src/demo/`, which seeds the data), installs it on the emulator and saves `docs/*.png`; then raise the `?v=` in the image links above, or browsers keep showing the old ones for a while. The food
+`app/src/demo/`, which seeds the data), installs it on the emulator and saves `docs/*.png`. Browsers may show the old pictures for a while after a push: Ctrl+Shift+R. The food
 photos are CC0, from Wikimedia Commons.
 
 ## Layout
