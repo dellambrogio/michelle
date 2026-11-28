@@ -7,10 +7,10 @@ your other health apps see it. The home screen shows today's meals and the day's
 For one person on a Pixel 10 (Android 16), installed over USB. Uses your own Anthropic API key.
 
 <p>
-  <img src="docs/today.png" width="200" alt="Today: the day's calories against the target, and the meals">
-  <img src="docs/meal.png" width="200" alt="A meal: the photo, calories and macros, and each food, editable">
-  <img src="docs/plan.png" width="200" alt="Plan: weight against the plan line, and calories a day against the target">
-  <img src="docs/review.png" width="200" alt="Review: Claude looks back at two weeks of meals">
+  <img src="docs/today.png?v=2" width="200" alt="Today: the day's calories against the target, and the meals">
+  <img src="docs/meal.png?v=2" width="200" alt="A meal: the photo, calories and macros, and each food, editable">
+  <img src="docs/plan.png?v=2" width="200" alt="Plan: weight against the plan line, and calories a day against the target">
+  <img src="docs/review.png?v=2" width="200" alt="Review: Claude looks back at two weeks of meals">
 </p>
 
 ## Build and run
@@ -45,13 +45,13 @@ encrypted with a key from the Android Keystore; it's never logged. It can also b
 
 ## Using it
 
-- **Photo** or **Manual** (bottom right; Manual: describe it in words and let Claude estimate, or type the numbers yourself): the Pixel camera opens; take the picture and confirm. Claude needs a few
+- **Photo** (the big round button at the bottom) or **Manual** (bottom right; Manual: describe it in words and let Claude estimate, or type the numbers yourself): the Pixel camera opens; take the picture and confirm. Claude needs a few
   seconds (about 6 s with Opus 5.5).
 - Check the items: change any food, portion, kcal or grams, remove items (×), add one. The title, the
   meal type (guessed from the time) and the time can be changed too. **Save**, or ✕ to discard.
 - No food in the photo, or no network: retake, retry, type it in by hand or discard.
 - Tap a meal on Today to change or delete it; Health Connect follows.
-- **Review** (light bulb): Claude reads the last two weeks of meals (whole days, as text, no photos), your
+- **Review** (light bulb, bottom left): Claude reads the last two weeks of meals (whole days, as text, no photos), your
   goal and weighings, and writes a short review: the main thing, 3–5 points, one change for the coming
   week. It's kept on the phone; a new one is written with ↻, or by itself when the last is a week old
   (a few cents each with Opus).
@@ -117,7 +117,7 @@ Delete the test meal afterwards (open it → trash).
 The pictures above come from an emulator with made-up meals and weights, never from a phone in use:
 start one (`android emulator create medium_phone && android emulator start medium_phone`), then
 `just screenshots`. It builds a separate demo app (`-Pdemo`: `dev.michelle.demo`, with
-`app/src/demo/`, which seeds the data), installs it on the emulator and saves `docs/*.png`. The food
+`app/src/demo/`, which seeds the data), installs it on the emulator and saves `docs/*.png`; then raise the `?v=` in the image links above, or browsers keep showing the old ones for a while. The food
 photos are CC0, from Wikimedia Commons.
 
 ## Layout
