@@ -2,6 +2,7 @@ package dev.michelle
 
 import android.app.Application
 import dev.michelle.ai.Analyzer
+import dev.michelle.ai.ReviewStore
 import dev.michelle.data.Db
 import dev.michelle.health.BodyReader
 import dev.michelle.health.HealthWriter
@@ -20,6 +21,7 @@ class App : Application() {
     val health by lazy { HealthWriter(this, db.meals()) }
     val meals by lazy { Meals(db.meals(), health, photos, scope) }
     val analyzer by lazy { Analyzer(secrets, settings) }
+    val reviews by lazy { ReviewStore(this) }
     val goals by lazy { GoalStore(this) }
     val profiles by lazy { ProfileStore(this) }
     val body by lazy { BodyReader(this) }

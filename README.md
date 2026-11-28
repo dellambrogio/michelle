@@ -50,6 +50,10 @@ encrypted with a key from the Android Keystore; it's never logged. It can also b
   meal type (guessed from the time) and the time can be changed too. **Save**, or ✕ to discard.
 - No food in the photo, or no network: retake, retry, type it in by hand or discard.
 - Tap a meal on Today to change or delete it; Health Connect follows.
+- **Review** (light bulb): Claude reads the last two weeks of meals (whole days, as text, no photos), your
+  goal and weighings, and writes a short review: the main thing, 3–5 points, one change for the coming
+  week. It's kept on the phone; a new one is written with ↻, or by itself when the last is a week old
+  (a few cents each with Opus).
 - Settings (gear): the key, the model (Opus 5.5 by default, about 2–4 cents a meal; Sonnet 5.5; Haiku
   5.5, a fraction of a cent), Health Connect permission and "sync now".
 
@@ -127,6 +131,7 @@ app/src/main/java/dev/michelle/
   Secrets.kt, Settings.kt   the API key (Keystore-encrypted), the model
   ai/Analyzer.kt            Claude: the photo in, JSON out (structured output), errors
   ai/Prompt.kt, Analysis.kt what Claude is asked, the JSON schema, parsing
+  ai/Review.kt              the review: the log as text, its prompt and schema, the last one kept
   Goal.kt                   the goal (plan line, pace) and the profile; kept in the app's preferences
   trend/                    the numbers: daily kcal, smoothed trend, calorie target; Progress loads them
   health/BodyReader.kt      Health Connect, reading: weights, height
@@ -138,5 +143,5 @@ app/src/main/java/dev/michelle/
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The camera, chart, cloud-off, edit and sync icons are
+MIT, see [LICENSE](LICENSE). The camera, chart, cloud-off, edit, light bulb and sync icons are
 [Material icons](https://fonts.google.com/icons) by Google (Apache 2.0); the whale is Michelle's own.

@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dev.michelle.ui.MealScreen
+import dev.michelle.ui.ReviewScreen
 import dev.michelle.ui.MichelleTheme
 import dev.michelle.ui.SettingsScreen
 import dev.michelle.ui.TodayScreen
@@ -96,9 +97,11 @@ class MainActivity : ComponentActivity() {
                             onOpen = { nav.navigate("meal/$it") },
                             onSettings = { nav.navigate("settings") },
                             onTrend = { nav.navigate("trend") },
+                            onReview = { nav.navigate("review") },
                         )
                     }
                     composable("trend") { TrendScreen(onBack = { nav.popBackStack() }) }
+                    composable("review") { ReviewScreen(onBack = { nav.popBackStack() }, onSettings = { nav.navigate("settings") }) }
                     composable(
                         "meal/{id}?capture={capture}&describe={describe}",
                         arguments = listOf(
